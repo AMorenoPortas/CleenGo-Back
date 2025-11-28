@@ -52,8 +52,6 @@ export abstract class User {
   @Column({ type: 'int', default: 0 })
   rating: number;
 
-  // ───────────── RELACIONES DIRECTAS DEL DER ─────────────
-
   // Un usuario puede tener muchas citas como CLIENTE
   @OneToMany(() => Appointment, (appointment) => appointment.clientId)
   clientAppointments: Appointment[];
