@@ -1,4 +1,4 @@
-import { Services } from "src/categories/entities/services.entity";
+import { Service } from "src/categories/entities/services.entity";
 import { User } from "src/user/entities/user.entity";
 import { Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { AppointmentStatus } from "../../enum/appointmenStatus.enum";
@@ -15,7 +15,7 @@ export class Appointment {
     @JoinColumn({name: 'provider_id'})
     providerId: User
 
-    @ManyToMany(()=>Services)
+    @ManyToMany(()=>Service)
     @JoinTable({
     name: 'APPOINTMENT_SERVICES',
     joinColumn: {
@@ -27,7 +27,7 @@ export class Appointment {
       referencedColumnName: 'id',
     },
   })
-    services: Services[]
+    services: Service[]
 
     @Column({type: 'decimal',
     precision: 10,
