@@ -100,4 +100,20 @@ async getProviders(
 // /providers?day=lunes
 // /providers?name=Juan&category=Peluqueria&day=lunes
  */
+
+
+//endpoint a consumir 
+// GET /provider/filters?days[]=lunes&days[]=martes&hours[]=08:00&services[]=idServicio&rating=4
+@Get('filters')
+@ApiOperation({ summary: 'Filtra proveedores por días, horarios, servicios y rating' })
+@ApiResponse({ status: 200, description: 'Lista de proveedores filtrados' })
+filterProviders(
+  @Query('days') days?: string[],
+  @Query('hours') hours?: string[],
+  @Query('services') services?: string[],
+  @Query('rating') rating?: number,
+) {
+  return this.providerService.filterProviders({ days, hours, services, rating });
+}
+
 }
