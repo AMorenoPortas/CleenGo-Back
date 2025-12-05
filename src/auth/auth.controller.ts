@@ -6,6 +6,8 @@ import {
   HttpStatus,
   HttpCode,
   Put,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth';
@@ -16,6 +18,8 @@ import { RegisterProviderDto } from 'src/provider/dto/create-provider.dto';
 import { Role } from 'src/enum/role.enum';
 import { ThirdPartyAuthDto } from './dto/third-party-auth.dto';
 import { AuthenticatedClient } from 'src/user/interfaces/authenticated-client';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -94,8 +98,35 @@ export class AuthController {
     return this.authService.thirdPartyAuth(roleParam, body);
   }
 
-  //!--------AGREGAR ESTAS ACCIONES EN AUTH CONTROLLER Y SERVICE --------
-  //* 1. Como cliente quiero poder cambiar mi contraseña (módulo autenticación).
+  //? -------- Cambio de contraseña --------
+  @ApiOperation({
+    summary: 'Cambio de contraseña',
+    description:
+      'Permite al usuario cambiar su contraseña actual de forma segura',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Contraseña actualizada correctamente',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Datos inválidos o la contraseña no coincide con la actual',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Usuario no autenticado o token inválido',
+  })
+  @UseGuards(JwtAuthGuard)
+  @Put('change-password')
+  changePassword(
+    @Req() req: Request & { user: AuthenticatedClient },
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    const userId = req.user.id;
+
+    return this.authService.changePassword(userId, changePasswordDto);
+  }
+
   //* 2. Como cliente quiero poder recuperar mi contraseña si la olvido (módulo autenticación).
   //* 3. Como cliente quiero poder cerrar sesión de manera segura (módulo de autenticación).
 }
