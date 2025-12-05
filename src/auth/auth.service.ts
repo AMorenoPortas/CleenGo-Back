@@ -368,5 +368,5 @@ export class AuthService {
     return {
       message: '✅ Contraseña actualizada correctamente',
     };
-  } //FIN changePassword
+  }
 }

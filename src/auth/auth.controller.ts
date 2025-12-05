@@ -12,7 +12,13 @@ import {
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth';
 import { ApiOperation } from '@nestjs/swagger/dist/decorators/api-operation.decorator';
-import { ApiBody, ApiOkResponse, ApiParam, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOkResponse,
+  ApiParam,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { RegisterUserDto } from 'src/user/dto/register-user.dto';
 import { RegisterProviderDto } from 'src/provider/dto/create-provider.dto';
 import { Role } from 'src/enum/role.enum';
@@ -26,6 +32,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   //? -------- Registro de cliente --------
+  @ApiOperation({
+    summary: 'Registro de cliente',
+    description: 'Registro de usuarios con rol cliente',
+  })
   @ApiBody({
     type: RegisterUserDto,
     required: true,
@@ -38,6 +48,10 @@ export class AuthController {
   }
 
   //? -------- Registro de proveedor --------
+  @ApiOperation({
+    summary: 'Registro de proveedor',
+    description: 'Registro de usuarios con rol proveedor',
+  })
   @ApiBody({
     type: RegisterProviderDto,
     required: true,
@@ -116,6 +130,7 @@ export class AuthController {
     status: 401,
     description: 'Usuario no autenticado o token inválido',
   })
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Put('change-password')
   changePassword(
@@ -126,7 +141,4 @@ export class AuthController {
 
     return this.authService.changePassword(userId, changePasswordDto);
   }
-
-  //* 2. Como cliente quiero poder recuperar mi contraseña si la olvido (módulo autenticación).
-  //* 3. Como cliente quiero poder cerrar sesión de manera segura (módulo de autenticación).
 }
