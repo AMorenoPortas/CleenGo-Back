@@ -4,7 +4,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { ProviderModule } from './provider/provider.module';
 import { AdminModule } from './admin/admin.module';
@@ -17,6 +17,7 @@ import { UserModule } from './user/user.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SeedModule } from './seeder/seeder.module';
 import { SuscriptionPlanModule } from './suscription-plan/suscription-plan.module';
+import { RedisModule } from './redis/redis-cache.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { SuscriptionPlanModule } from './suscription-plan/suscription-plan.modul
     CategoriesModule,
     SeedModule,
     SuscriptionPlanModule,
+    RedisModule,
   ],
 })
 export class AppModule {}
