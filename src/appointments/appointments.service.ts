@@ -19,7 +19,13 @@ export class AppointmentsService {
     return 'This action adds a new appointment';
   }
 
-  findAll() {
+  findAll(idAuthUser: string) {
+    //busco el usuario autenticado
+    const user = this.userRepository.findOne({where: {id: idAuthUser}});
+    if (!user) throw new BadRequestException('⚠️ User not found');
+
+    //traigo todas las appointments a su nombre
+    const appointments = this.appointmentRepository.find({where: {clientId: user, }});
     return `This action returns all appointments`;
   }
 
@@ -27,18 +33,18 @@ export class AppointmentsService {
     return `This action returns a #${id} appointment`;
   }
 
-  update(id: number, updateAppointmentDto: UpdateAppointmentDto) {
-    return `This action updates a #${id} appointment`;
-  }
+  async update(id: string, updateAppointmentDto: UpdateAppointmentDto, idAuthUser:string) {
 
-  async remove(id: string, authuser:string) {
+    //traigo el appointment en cuestion y el usuario autenticado
     const appointment = await this.appointmentRepository.findOne({where: {id: id}});
-    const user = await this.userRepository.findOne({where: {id: authuser}});
+
+    const user = await this.userRepository.findOne({where: {id: idAuthUser}});
     if (!user) throw new BadRequestException('⚠️ User not found');
     if (!appointment) throw new BadRequestException('⚠️ Appointment not found');
 
     if(user.role === 'client' && appointment.clientId.id !== user.id) throw new BadRequestException('⚠️ You are not the owner of this appointment');
     else if(user.role === 'client'){
+      if(appointment.status === AppointmentStatus.CONFIRMEDPROVIDER || appointment.status === AppointmentStatus.COMPLETED) throw new BadRequestException('⚠️ You can not cancel this appointment');
       appointment.status = AppointmentStatus.CANCELLED;
     }
 
@@ -47,5 +53,25 @@ export class AppointmentsService {
       appointment.status = AppointmentStatus.REJECTED;
     }
     return this.appointmentRepository.save(appointment);
+    ;
+  }
+
+  async remove(id: string, authuser:string) {
+
+    //traigo el appointment en cuestion y el usuario autenticado
+    const appointment = await this.appointmentRepository.findOne({where: {id: id}});
+
+    const user = await this.userRepository.findOne({where: {id: authuser}});
+    if (!user) throw new BadRequestException('⚠️ User not found');
+    if (!appointment) throw new BadRequestException('⚠️ Appointment not found');
+
+    if(user.role === 'client' && appointment.clientId.id !== user.id) throw new BadRequestException('⚠️ You are not the owner of this appointment');
+    if(user.role === 'provider' && appointment.providerId.id !== user.id) throw new BadRequestException('⚠️ You are not the owner of this appointment');
+
+  
+
+    return this.appointmentRepository.update(id, {isActive: false});
+  
+
   }
 }
