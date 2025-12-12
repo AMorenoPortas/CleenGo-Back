@@ -37,9 +37,9 @@ export class AppointmentsService {
       .leftJoinAndSelect('appointment.serviceId.categoryId', 'category');
 
       //filtro usando el usurio autenticado
-    if (authUser.rol === Role.CLIENT) {
+    if (user.role === Role.CLIENT) {
       query.where('client.userId = :user', { user: user });
-    } else if (authUser.rol === Role.PROVIDER) {
+    } else if (user.role === Role.PROVIDER) {
       query.where('provider.userId = :user', { user: user });
     }
     
@@ -80,12 +80,23 @@ export class AppointmentsService {
     query.orderBy('appointment.AppointmentDate', 'DESC');
 
     const appointments: Appointment[] = await query.getMany();
+
+    return appointments;
    
   
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} appointment`;
+  async findOne(id: string, authUser) {
+    const user = await this.userRepository.findOne({where: {id: authUser.sub}});
+    if(!user) throw new BadRequestException('⚠️ User not found');
+
+    const appointment = await this.appointmentRepository.findOne({
+      where: {id: id},
+      relations: ['clientId', 'providerId', 'services']});
+    if (!appointment) throw new BadRequestException('⚠️ Appointment not found');
+
+    if(appointment.clientId.id !== user.id || appointment.providerId.id !== user.id) throw new BadRequestException('⚠️ You are not the owner of this appointment');
+    return appointment;
   }
 
   async update(id: string, updateAppointmentDto: UpdateAppointmentDto, idAuthUser:string) {
