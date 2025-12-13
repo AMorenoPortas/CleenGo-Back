@@ -1,9 +1,10 @@
 export class CreateAppointmentDto {
-    provider: string;
+    //email del proveedor
+    providerEmail: string;
     date: Date;
     startTime: string;
     address: string;
-    service: string;
+    service?: string;
     notes: string;
 
 }
