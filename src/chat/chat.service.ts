@@ -1,4 +1,6 @@
+//src/chat/chat.service.ts
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -21,13 +23,16 @@ export class ChatService {
     senderId: string;
     content: string;
   }) {
-    const { appointmentId, senderId, content } = params;
+    const { appointmentId, senderId } = params;
+    const content = (params.content ?? '').trim();
 
-    // 1) Traer participantes reales de la cita
+    if (!content) {
+      throw new BadRequestException('content no puede estar vacío');
+    }
+
     const { clientId, providerId } =
       await this.appointmentsService.getParticipantsOrFail(appointmentId);
 
-    // 2) Validar que el sender sea parte del appointment
     const isClient = senderId === clientId;
     const isProvider = senderId === providerId;
 
@@ -35,7 +40,6 @@ export class ChatService {
       throw new ForbiddenException('You are not a participant of this chat');
     }
 
-    // 3) El receiver es el "otro"
     const computedReceiverId = isClient ? providerId : clientId;
 
     if (!computedReceiverId) {
@@ -45,7 +49,7 @@ export class ChatService {
     }
 
     const newMessage = this.chatMessageRepository.create({
-      content: content.trim(),
+      content,
       appointment: { id: appointmentId } as any,
       sender: { id: senderId } as any,
       receiver: { id: computedReceiverId } as any,

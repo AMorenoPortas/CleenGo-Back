@@ -1,4 +1,4 @@
-//src/appointments/appointments.service.ts
+//CleenGo-Back/src/appointments/appointments.service.ts
 import {
   BadRequestException,
   ForbiddenException,
@@ -36,7 +36,7 @@ export class AppointmentsService {
     private readonly providerRepository: Repository<Provider>,
   ) {}
 
-  // ✅ ESTE ES TU MÉTODO PARA EL CHAT (no afecta lo de tu compa)
+  // Método para el chat
   async getParticipantsOrFail(appointmentId: string) {
     const appointment = await this.appointmentRepository.findOne({
       where: { id: appointmentId },
@@ -70,7 +70,7 @@ export class AppointmentsService {
     };
   }
 
-  // ================== LÓGICA DE TU COMPA (SIN TOCAR) ==================
+  // ================== LÓGICA SOFI ==================
 
   async create(createAppointmentDto: CreateAppointmentDto, authUser: any) {
     const user = await this.userRepository.findOne({
@@ -82,43 +82,58 @@ export class AppointmentsService {
     const { service, date, startTime, notes, providerEmail, address } =
       createAppointmentDto;
 
-    if (!date || !startTime || !notes || !providerEmail || !address) {
+    // !(categoru && appointmentDate && hour && notes && provider)
+    if (
+      //agregar service
+      !date ||
+      !startTime ||
+      !notes ||
+      !providerEmail ||
+      !address
+    )
       throw new BadRequestException('all required fields must be complete');
-    }
 
-    // verifico que la fecha de emision sea posterior a la actual
+    //verifico que la fecha de emision sea posterior a la actual
     const appointmentDateType = new Date(date);
     appointmentDateType.setMinutes(
       appointmentDateType.getMinutes() +
         appointmentDateType.getTimezoneOffset(),
     );
-
     const today = new Date();
 
-    if (appointmentDateType <= today) {
+    if (appointmentDateType <= today)
       throw new BadRequestException(
         'the appointment date must be later than the current date',
       );
-    }
 
-    // busco el proveedor
+    //busco el servicio solicitado en la appointment y el rpoveedor
+
+    // const foundService = await this.serviceRepository.findOneBy({name: service});
     const providerFound = await this.providerRepository.findOne({
       where: { email: providerEmail, role: Role.PROVIDER },
+      // relations: ['services'],
     });
 
+    // if (!foundService) throw new NotFoundException('service not found');
     if (!providerFound) throw new NotFoundException('Provider not found');
+
+    // if (!providerFound.services.includes(foundService)) {
+    //   throw new BadRequestException(
+    //     `El proveedor no ofrece el servicio ${service}`,
+    //   );
+    // }
 
     this.validateProviderWorksThatDay(providerFound, date);
     this.validateStartHourInWorkingRange(providerFound, startTime);
     await this.validateNoStartOverlap(providerFound.id, date, startTime);
 
-    // CREACION DEL APPOINTMENT
+    //CREACION DEL APPOINTMENT
     const appointment = new Appointment();
 
     appointment.clientId = user;
     appointment.providerId = providerFound;
     // appointment.services = foundService;
-    appointment.date = date as any;
+    appointment.date = date;
     appointment.startHour = startTime;
     appointment.notes = notes;
     appointment.addressUrl = address;
@@ -128,11 +143,15 @@ export class AppointmentsService {
   }
 
   async findAllUserAppointments(authUser: any, filters: filterAppointmentDto) {
+    //busco el usuario autenticado
     const user = await this.userRepository.findOne({
       where: { id: authUser.id },
     });
     if (!user) throw new BadRequestException('⚠️ User not found');
 
+    console.log(filters);
+
+    //traigo todas las appointments
     const query = this.appointmentRepository
       .createQueryBuilder('appointment')
       .leftJoinAndSelect('appointment.clientId', 'client')
@@ -140,12 +159,14 @@ export class AppointmentsService {
     // .leftJoinAndSelect('appointment.serviceId', 'service')
     // .leftJoinAndSelect('appointment.serviceId.categoryId', 'category');
 
+    //filtro usando el usurio autenticado
     if (user.role === Role.CLIENT) {
       query.where('client.id = :user', { user: user.id });
     } else if (user.role === Role.PROVIDER) {
       query.where('provider.id = :user', { user: user.id });
     }
 
+    //preparo la query para filtrar usando los filtros de busqueda
     if (filters.status) {
       query.andWhere('appointment.status = :status', {
         status: filters.status,
@@ -158,18 +179,21 @@ export class AppointmentsService {
       });
     }
 
+    //el filtro por proveedor contratado que solo sera para el cliente
     if (filters.provider) {
       query.andWhere('provider_id.name = :provider', {
         provider: filters.provider,
       });
     }
 
+    //el filtro por cliente es solo para el proveedor
     if (filters.client) {
       query.andWhere('client_id.name = :client', {
         client: filters.client,
       });
     }
 
+    //el filtro por fecha
     if (filters.date) {
       query.andWhere('appointment.date = :date', {
         date: filters.date,
@@ -179,7 +203,6 @@ export class AppointmentsService {
     query.orderBy('appointment.date', 'DESC');
 
     const appointments: Appointment[] = await query.getMany();
-
     if (user.role === Role.PROVIDER) {
       const providerAppointments = appointments.filter(
         (appointment) => appointment.providerId.id === user.id,
@@ -188,42 +211,48 @@ export class AppointmentsService {
         (appointment) => appointment.clientId.id === user.id,
       );
 
-      return { providerAppointments, clientAppointments };
+      const totalAppointments = {
+        providerAppointments,
+        clientAppointments,
+      };
+      return totalAppointments;
     } else {
-      const providerAppointments: Appointment[] = [];
+      const providerAppointments = [];
       const clientAppointments = appointments.filter(
         (appointment) => appointment.clientId.id === user.id,
       );
 
-      return { providerAppointments, clientAppointments };
+      const totalAppointments = {
+        providerAppointments,
+        clientAppointments,
+      };
+      return totalAppointments;
     }
   }
 
-  async findOne(id: string, authUser: any) {
+  async findOne(id: string, authUser) {
     const user = await this.userRepository.findOne({
       where: { id: authUser.id },
     });
     if (!user) throw new BadRequestException('⚠️ User not found');
 
     const appointment = await this.appointmentRepository.findOne({
-      where: { id },
+      where: { id: id },
       relations: ['clientId', 'providerId', 'services'],
     });
-
     if (!appointment) throw new BadRequestException('⚠️ Appointment not found');
 
     if (
       appointment.clientId.id !== user.id &&
       appointment.providerId.id !== user.id
-    ) {
+    )
       throw new BadRequestException(
         '⚠️ You are not the owner of this appointment',
       );
-    }
-
     return appointment;
   }
 
+  //ruta exclusiva para el provider en la cita. ppara cargar el precio y el horario estimado de final de la visita luego de comunicarse con el cliente
   async update(
     id: string,
     updateAppointmentDto: UpdateAppointmentDto,
@@ -235,70 +264,67 @@ export class AppointmentsService {
     if (!user) throw new BadRequestException('⚠️ User not found');
 
     const appointment = await this.appointmentRepository.findOne({
-      where: { id },
+      where: { id: id },
       relations: ['providerId'],
     });
-
     if (!appointment) throw new BadRequestException('⚠️ Appointment not found');
 
-    if (appointment.providerId.id !== user.id) {
+    if (appointment.providerId.id !== user.id)
       throw new BadRequestException(
         '⚠️ Only the provider can update this appointment',
       );
-    }
 
-    if (updateAppointmentDto.endHour)
+    if (updateAppointmentDto.endHour) {
       appointment.endHour = updateAppointmentDto.endHour;
-    if (updateAppointmentDto.price)
+    }
+    if (updateAppointmentDto.price) {
       appointment.price = updateAppointmentDto.price;
+    }
 
     return this.appointmentRepository.save(appointment);
   }
 
   async updateStatus(id: string, status: AppointmentStatus, authUser: any) {
+    //traigo el appointment en cuestion y el usuario autenticado
     const appointment = await this.appointmentRepository.findOne({
-      where: { id },
+      where: { id: id },
       relations: ['clientId', 'providerId'],
     });
-
     if (!appointment) throw new BadRequestException('⚠️ Appointment not found');
 
     const user = await this.userRepository.findOne({
       where: { id: authUser.id },
     });
     if (!user) throw new BadRequestException('⚠️ User not found');
+    console.log(user);
+    console.log(appointment);
 
     if (
       appointment.clientId.id !== user.id &&
       appointment.providerId.id !== user.id
-    ) {
+    )
       throw new BadRequestException(
         '⚠️ You are not the owner of this appointment',
       );
-    }
 
     if (appointment.status === status)
       throw new BadRequestException('⚠️ The status is the same');
-    if (appointment.status === AppointmentStatus.CANCELLED) {
+    if (appointment.status === AppointmentStatus.CANCELLED)
       throw new BadRequestException('⚠️ The status is already cancelled');
-    }
 
-    if (
-      status === AppointmentStatus.PENDING &&
-      user !== appointment.providerId
-    ) {
+    if (status === AppointmentStatus.PENDING && user !== appointment.providerId)
       throw new BadRequestException(
         '⚠️ only the provider can change the status to pending',
       );
-    }
 
     appointment.status = status;
     return this.appointmentRepository.save(appointment);
   }
 
   async remove(id: string, authuser: any) {
+    //traigo el appointment en cuestion y el usuario autenticado
     const appointment = await this.appointmentRepository.findOne({
-      where: { id },
+      where: { id: id },
       relations: ['clientId', 'providerId'],
     });
 
@@ -308,27 +334,26 @@ export class AppointmentsService {
     if (!user) throw new BadRequestException('⚠️ User not found');
     if (!appointment) throw new BadRequestException('⚠️ Appointment not found');
 
-    if (user.role === 'client' && appointment.clientId.id !== user.id) {
+    if (user.role === 'client' && appointment.clientId.id !== user.id)
       throw new BadRequestException(
         '⚠️ You are not the owner of this appointment',
       );
-    }
-    if (user.role === 'provider' && appointment.providerId.id !== user.id) {
+    if (user.role === 'provider' && appointment.providerId.id !== user.id)
       throw new BadRequestException(
         '⚠️ You are not the owner of this appointment',
       );
-    }
 
     return this.appointmentRepository.update(id, { isActive: false });
   }
 
-  // ---------------------- HELPERS ----------------------
+  //----------------------HELPERS----------------------
 
   private validateProviderWorksThatDay(
     provider: Provider,
     date: string | Date,
   ) {
     const paseDate = new Date(date);
+    // Forzamos el horario al mediodía
     paseDate.setHours(12, 0, 0, 0);
 
     let day = paseDate
@@ -341,7 +366,6 @@ export class AppointmentsService {
       throw new BadRequestException(`Provider does not work on ${day}`);
     }
   }
-
   private validateStartHourInWorkingRange(
     provider: Provider,
     startHour: string,
@@ -359,7 +383,6 @@ export class AppointmentsService {
       throw new BadRequestException(`Provider is not working at ${startHour}`);
     }
   }
-
   private async validateNoStartOverlap(
     providerId: string,
     date: Date | string,
@@ -367,8 +390,8 @@ export class AppointmentsService {
   ) {
     const existingAppointments = await this.appointmentRepository.find({
       where: {
-        providerId: { id: providerId } as any,
-        date: new Date(date) as any,
+        providerId: { id: providerId },
+        date: new Date(date),
         isActive: true,
       },
     });
@@ -387,7 +410,6 @@ export class AppointmentsService {
       );
     }
   }
-
   private timeToMinutes(time: string): number {
     const [hours, minutes] = time.split(':').map(Number);
     return hours * 60 + minutes;

@@ -1,10 +1,10 @@
-import { IsUUID, IsString, MinLength } from 'class-validator';
+import { IsUUID, IsString, Matches } from 'class-validator';
 
 export class CreateChatMessageDto {
   @IsUUID()
   appointmentId: string;
 
   @IsString()
-  @MinLength(1)
+  @Matches(/\S/, { message: 'content no puede estar vacío' })
   content: string;
 }
