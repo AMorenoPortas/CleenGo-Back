@@ -48,7 +48,7 @@ export class AuthService {
 
   //? -------- Registro de cliente --------
   async clientSignUp(registerUserDto: RegisterUserDto) {
-    const { name, surname, email, password, birthDate, profileImgUrl, phone } =
+    const { name, surname, email, password, birthDate } =
       registerUserDto;
 
     const existingUser = await this.userRepository.findOne({
@@ -59,16 +59,26 @@ export class AuthService {
       throw new BadRequestException(
         '⚠️ Ya existe un usuario registrado con ese email',
       );
+    
+    const emailExtension = email.split('@')[1];
+
+    let role
+
+    if(emailExtension === 'cleengo.com'){
+      role = Role.ADMIN
+    }else{
+      role = Role.CLIENT
+    }
 
     const { data, error } = await this.supabaseClient.auth.signUp({
       email,
       password,
       options: {
         data: {
-          role: 'client',
+          role,
           name,
           surname,
-          phone,
+         
         },
       },
     });
@@ -91,7 +101,7 @@ export class AuthService {
     const birthDateValue =
       birthDate instanceof Date ? birthDate : new Date(birthDate);
 
-    console.log('Role.CLIENT =>', Role.CLIENT);
+    console.log('Role =>', role);
 
     const newUser = this.userRepository.create({
       name: formattedName,
@@ -99,9 +109,8 @@ export class AuthService {
       email,
       passwordUrl: supabaseUser.id,
       birthDate: birthDateValue,
-      profileImgUrl,
-      phone,
-      role: Role.CLIENT,
+      
+      role: role,
     });
 
     const savedUser = await this.userRepository.save(newUser);
@@ -132,11 +141,7 @@ export class AuthService {
       email,
       password,
       birthDate,
-      profileImgUrl,
-      phone,
-      days,
-      hours,
-      about,
+     
     } = registerProviderDto;
 
     const existingUser = await this.userRepository.findOne({
@@ -156,7 +161,6 @@ export class AuthService {
           role: 'provider',
           name,
           surname,
-          phone,
         },
       },
     });
@@ -185,11 +189,7 @@ export class AuthService {
       email,
       passwordUrl: supabaseProvider.id,
       birthDate: birthDateValue,
-      profileImgUrl,
-      phone,
-      days,
-      hours,
-      about,
+  
       role: Role.PROVIDER,
     });
 
