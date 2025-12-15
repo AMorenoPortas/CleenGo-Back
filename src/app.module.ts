@@ -4,7 +4,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { ProviderModule } from './provider/provider.module';
 import { AdminModule } from './admin/admin.module';
@@ -16,6 +16,12 @@ import { FileUploadModule } from './file-upload/file-upload.module';
 import { UserModule } from './user/user.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SeedModule } from './seeder/seeder.module';
+import { NodemailerModule } from './nodemailer/nodemailer.module';
+import { SuscriptionPlanModule } from './suscription-plan/suscription-plan.module';
+import { RedisModule } from './redis/redis-cache.module';
+import { DashboardCacheModule } from './Dashboard/dashboard-cache.module';
+import { DashboardCronModule } from './Dashboard/dashboard-cron.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -37,8 +43,13 @@ import { SeedModule } from './seeder/seeder.module';
     FileUploadModule,
     UserModule,
     ReviewsModule,
-    CategoriesModule,
     SeedModule,
+    NodemailerModule,
+    SuscriptionPlanModule,
+    RedisModule,
+    DashboardCacheModule,
+    DashboardCronModule,
+    ChatModule,
   ],
 })
 export class AppModule {}
