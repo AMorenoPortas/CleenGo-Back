@@ -21,18 +21,12 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Role } from 'src/enum/role.enum';
 import { Roles } from 'src/decorators/roles.decorator';
 import { statusDto } from './dto/status.dto';
-<<<<<<< HEAD
-import { ApiBearerAuth } from '@nestjs/swagger';
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
-=======
 import {
   ApiBearerAuth,
   ApiOkResponse,
   ApiOperation,
   ApiQuery,
 } from '@nestjs/swagger';
->>>>>>> 09fa6aa7f69af588537bb0b8b70dc227816c1e65
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)

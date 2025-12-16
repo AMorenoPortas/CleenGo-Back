@@ -111,6 +111,7 @@ export class AppointmentsService {
       where: { email: providerEmail, role: Role.PROVIDER },
       relations: ['services'],
     });
+    console.log(providerFound);
 
     if (!foundService) throw new NotFoundException('service not found');
 
@@ -470,6 +471,7 @@ export class AppointmentsService {
     startHour: string,
   ) {
     const start = this.timeToMinutes(startHour);
+    console.log(provider.hours)
 
     const isInside = provider.hours?.some((range) => {
       const [from, to] = range.split('-');
