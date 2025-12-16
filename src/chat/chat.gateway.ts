@@ -95,6 +95,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  // =========================
+  // ✅ Navbar unread helper (room por usuario)
+  // =========================
+  private async emitUnreadSummaryToUser(userId: string) {
+    try {
+      const summary = await this.chatService.getUnreadSummary(userId);
+      const total = (summary ?? []).reduce(
+        (acc: number, x: any) => acc + Number(x?.count ?? 0),
+        0,
+      );
+
+      this.server.to(`user-${userId}`).emit('unreadSummaryUpdated', {
+        userId,
+        summary,
+        total,
+        at: new Date().toISOString(),
+      });
+    } catch (e) {
+      // no tumbamos el WS por falla de DB momentánea
+      console.warn('emitUnreadSummaryToUser error', e);
+    }
+  }
+
   // =====================================================
   // 🔐 AUTENTICACIÓN SOCKET
   // =====================================================
@@ -129,13 +152,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.data.user = wsUser;
 
+      // ✅ room por usuario (para Navbar realtime)
+      client.join(`user-${wsUser.id}`);
+
       const wasOffline = addOnline(wsUser.id, client.id);
 
       // Global presence
       if (wasOffline) this.server.emit('userOnline', { userId: wsUser.id });
 
-      // ✅ Y además refrescamos presence de todos los rooms donde este user participa
+      // refrescar presence de rooms donde participa
       this.emitPresenceForAllAppointmentsOfUser(wsUser.id);
+
+      // ✅ snapshot de unread al conectar (opcional pero muy útil)
+      await this.emitUnreadSummaryToUser(wsUser.id);
 
       console.log(`🔌 WS conectado: ${wsUser.email}`);
     } catch (error: any) {
@@ -159,7 +188,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if (becameOffline) this.server.emit('userOffline', { userId: user.id });
 
-      // ✅ refrescar presence de rooms donde participa
+      // refrescar presence de rooms donde participa
       this.emitPresenceForAllAppointmentsOfUser(user.id);
     }
 
@@ -193,8 +222,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const room = `appointment-${appointmentId}`;
     client.join(room);
 
-    // ✅ snapshot inmediato para todos en el room (incluye al que entra)
+    // snapshot inmediato para todos en el room
     this.emitPresenceToRoom(appointmentId);
+
+    // ✅ snapshot unread al entrar al chat (opcional)
+    await this.emitUnreadSummaryToUser(user.id);
 
     console.log(`📥 ${user.email} se unió al room ${room}`);
   }
@@ -222,7 +254,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       content,
     });
 
+    // chat realtime en room de appointment
     this.server.to(`appointment-${appointmentId}`).emit('newMessage', message);
+
+    // ✅ Navbar realtime: subir unread del receptor
+    const receiverId = message?.receiver?.id;
+    if (receiverId) {
+      await this.emitUnreadSummaryToUser(receiverId);
+    }
 
     client.emit('messageDelivered', {
       messageId: message.id,
@@ -254,6 +293,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       updatedCount: result.updatedCount ?? 0,
       at: new Date().toISOString(),
     });
+
+    // ✅ Navbar realtime: bajar unread del que leyó
+    await this.emitUnreadSummaryToUser(user.id);
 
     return result;
   }
