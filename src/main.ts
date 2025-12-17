@@ -10,7 +10,6 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use('/subscription/webhook', express.raw({ type: 'application/json' }));
 
-
   app.use(json());
   app.enableCors({
     origin: process.env.FRONT_URL,
