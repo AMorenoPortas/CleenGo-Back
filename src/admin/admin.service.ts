@@ -6,13 +6,19 @@ import { Role } from 'src/enum/role.enum';
 import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { Provider } from 'src/provider/entities/provider.entity';
+import { Suscription } from 'src/suscription/entities/suscription.entity';
 
 @Injectable()
 export class AdminService {
   constructor(
-    @InjectRepository(User) 
+    @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ){}
+    @InjectRepository(Provider)
+    private readonly providerRepository: Repository<Provider>,
+
+    @InjectRepository(Suscription)
+    private readonly suscriptionRepository: Repository<Suscription>,
+  ) {}
 
   //voy a agregar mas adelante
   //  providersBySubscription: [
@@ -28,53 +34,30 @@ export class AdminService {
   // }
 
   async calculateDashboardStats() {
-  const totalClients = await this.userRepository.count({ where: { role: Role.CLIENT } });
-  const totalProviders = await this.userRepository.count({ where: { role: Role.PROVIDER } });
-  const totalUsers = await this.userRepository.count();
+    const totalClients = await this.userRepository.count({
+      where: { role: Role.CLIENT },
+    });
+    const totalProviders = await this.userRepository.count({
+      where: { role: Role.PROVIDER },
+    });
+    const totalUsers = totalClients + totalProviders;
 
-  const userProviders = await this.userRepository.find({
-    where: { role: Role.PROVIDER },
-    relations: ['suscription', 'suscription.plan'],
-  });
+    let ingresos = 0;
 
-  let ingresos = 0;
+    const suscriptions = await this.suscriptionRepository.find({
+      where: { paymentStatus: true },
+      relations: ['plan'],
+    });
 
-  const providers = userProviders as Provider[];
+    suscriptions.forEach((suscription) => {
+      ingresos += Number(suscription.plan.price);
+    });
 
-  providers.forEach(provider => {
-    if (provider.suscription?.plan?.price) {
-      ingresos += provider.suscription.plan.price;
-    }
-  });
-
-  
-
-  return {
-    totalClients,
-    totalProviders,
-    totalUsers,
-    ingresos,
-  };
-}
-
-
-  // create(createAdminDto: CreateAdminDto) {
-  //   return 'This action adds a new admin';
-  // }
-
-  // findAll() {
-  //   return `This action returns all admin`;
-  // }
-
-  // findOne(id: number) {
-  //   return `This action returns a #${id} admin`;
-  // }
-
-  // update(id: number, updateAdminDto: UpdateAdminDto) {
-  //   return `This action updates a #${id} admin`;
-  // }
-
-  // remove(id: number) {
-  //   return `This action removes a #${id} admin`;
-  // }
+    return {
+      totalClients,
+      totalProviders,
+      totalUsers,
+      ingresos,
+    };
+  }
 }
