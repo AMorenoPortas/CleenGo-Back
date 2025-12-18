@@ -474,14 +474,17 @@ if (!hasService) {
     provider: Provider,
     date: string | Date,
   ) {
+    console.log('date', date);
     const paseDate = new Date(date);
-    // Forzamos el horario al mediod├нa
-    paseDate.setHours(12, 0, 0, 0);
+    console.log('paseDate', paseDate);
 
     let day = paseDate
-    .toLocaleDateString('es-ES', { weekday: 'long' })
+      .toLocaleDateString('es-ES', {
+      weekday: 'long',
+      timeZone: 'UTC', // 🔥 CLAVE
+    })
     .toUpperCase();
- 
+
     
   day = day.charAt(0).concat(day.slice(1).toLowerCase());
 

@@ -6,12 +6,18 @@ import { Role } from 'src/enum/role.enum';
 import { User } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { Provider } from 'src/provider/entities/provider.entity';
+import { Suscription } from 'src/suscription/entities/suscription.entity';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectRepository(User) 
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Provider) 
+    private readonly providerRepository: Repository<Provider>,
+
+    @InjectRepository(Suscription)
+    private readonly suscriptionRepository: Repository<Suscription>,
   ){}
 
   //voy a agregar mas adelante
@@ -30,22 +36,19 @@ export class AdminService {
   async calculateDashboardStats() {
   const totalClients = await this.userRepository.count({ where: { role: Role.CLIENT } });
   const totalProviders = await this.userRepository.count({ where: { role: Role.PROVIDER } });
-  const totalUsers = await this.userRepository.count();
-
-  const userProviders = await this.userRepository.find({
-    where: { role: Role.PROVIDER },
-    relations: ['suscription', 'suscription.plan'],
-  });
+  const totalUsers = totalClients + totalProviders;
 
   let ingresos = 0;
 
-  const providers = userProviders as Provider[];
+  const suscriptions = await this.suscriptionRepository.find({where:{paymentStatus: true}, relations: ['plan']});
 
-  providers.forEach(provider => {
-    if (provider.suscription?.plan?.price) {
-      ingresos += provider.suscription.plan.price;
+  
+
+  suscriptions.forEach(
+    (suscription) => {
+      ingresos += Number(suscription.plan.price)
     }
-  });
+  );
 
   
 

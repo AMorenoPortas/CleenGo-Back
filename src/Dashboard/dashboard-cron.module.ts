@@ -9,9 +9,10 @@ import { Type } from 'class-transformer';
 import { User } from 'src/user/entities/user.entity';
 import { Provider } from 'src/provider/entities/provider.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Suscription } from 'src/suscription/entities/suscription.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Provider]),
+  imports: [TypeOrmModule.forFeature([User, Provider, Suscription]),
     ScheduleModule.forRoot(),
     DashboardCacheModule,
     AdminModule,
