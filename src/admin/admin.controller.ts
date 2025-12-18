@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+//CleenGo-Back/src/admin/admin.controller.ts
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { DashboardCacheService } from 'src/Dashboard/dashboard-cache.service';
 import { Roles } from 'src/decorators/roles.decorator';
@@ -14,7 +24,7 @@ export class AdminController {
   ) {}
 
   @Roles(Role.ADMIN)
-  @UseGuards(JwtAuthGuard,RolesGuard)  
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get('dashboard')
   async getDashboard() {
     // Buscar desde Redis

@@ -1,3 +1,4 @@
+//CleenGo-Back/src/Dashboard/dashboard-cron.module.ts
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DashboardCronService } from './dashboard-cron.service';
@@ -12,7 +13,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Suscription } from 'src/suscription/entities/suscription.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Provider, Suscription]),
+  imports: [
+    TypeOrmModule.forFeature([User, Provider, Suscription]),
     ScheduleModule.forRoot(),
     DashboardCacheModule,
     AdminModule,
